@@ -2,7 +2,6 @@ package seasonnarrative.visual;
 
 import com.jogamp.common.nio.Buffers;
 import com.jogamp.opengl.util.texture.Texture;
-import com.jogamp.opengl.util.texture.awt.AWTTextureData;
 import com.jogamp.opengl.util.texture.awt.AWTTextureIO;
 
 import javax.media.opengl.*;
@@ -40,6 +39,8 @@ public class GraphicPane extends GLJPanel implements GLEventListener {
 
     private final float vertices[] = new float[]{-1, -1, 1, -1, 1, 1, -1, 1};
 
+    private static final boolean DEBUG = true;
+
     private int vertexShader;
     private int fragmentShader;
     private int shaderProgram;
@@ -60,10 +61,11 @@ public class GraphicPane extends GLJPanel implements GLEventListener {
         addGLEventListener(this);
 
         try {
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             Scanner sc = new Scanner(new File("res/BackgroundShader.glsl"));
             while (sc.hasNextLine()) {
-                sb.append(sc.nextLine() + "\n");
+                sb.append(sc.nextLine());
+                sb.append("\n");
             }
             FRAGMENT_SHADER = sb.toString();
 
@@ -94,6 +96,7 @@ public class GraphicPane extends GLJPanel implements GLEventListener {
     public void init(GLAutoDrawable drawable) {
         GL2GL3 gl = drawable.getGL().getGL2GL3();
 
+        //set up shaders
         vertexShader = compile(gl, GL3.GL_VERTEX_SHADER, VERTEX_SHADER);
         fragmentShader = compile(gl, GL3.GL_FRAGMENT_SHADER, FRAGMENT_SHADER);
         shaderProgram = gl.glCreateProgram();
@@ -101,6 +104,7 @@ public class GraphicPane extends GLJPanel implements GLEventListener {
         gl.glAttachShader(shaderProgram, fragmentShader);
         gl.glLinkProgram(shaderProgram);
 
+        //Set up tree drawing
         img = new BufferedImage(1024,1024,BufferedImage.TYPE_INT_ARGB);
         g = img.getGraphics();
 
@@ -108,7 +112,6 @@ public class GraphicPane extends GLJPanel implements GLEventListener {
             tex = AWTTextureIO.newTexture(gl.getGLProfile(), img, true);
             tex.setTexParameteri(gl, GL3.GL_TEXTURE_MIN_FILTER, GL3.GL_LINEAR);
             tex.setTexParameteri(gl, GL3.GL_TEXTURE_MAG_FILTER, GL3.GL_LINEAR);
-
             tex.enable(gl);
             tex.bind(gl);
         }catch(Exception e){
@@ -157,6 +160,7 @@ public class GraphicPane extends GLJPanel implements GLEventListener {
 
         gl.glActiveTexture(GL3.GL_TEXTURE0);
 
+        //draw tree
         //       .< this value controls frequency of cpu rendering
         if(x++ % 2 == 0){
             Graphics2D gg = (Graphics2D) g;
@@ -175,7 +179,6 @@ public class GraphicPane extends GLJPanel implements GLEventListener {
         }
 
         tex.bind(gl);
-
 
         gl.glUniform1i(gl.glGetUniformLocation(shaderProgram,"tex"), 0);
 
@@ -197,13 +200,21 @@ public class GraphicPane extends GLJPanel implements GLEventListener {
         if(depth + 1 >= maxDepth)
             return;
         for(int i = 0; i < branches; i++){
-            Random nrand = new Random(rand.nextInt());
+            Random nRand = new Random(rand.nextInt());
             len += 5f*(rand.nextFloat() - 0.5);
-            drawTree(gg, depth + 1, maxDepth, branches, new Point((int) (start.x + len * Math.cos(angle)), (int) (start.y + len * Math.sin(angle))), len * lenf, offset + angle - spread / 4 + i * (spread / branches) + 0.4 * (rand.nextFloat() - 0.5), width * widthf, offset, spread, c, nrand);
-
+            drawTree(gg, depth + 1, maxDepth, branches, new Point((int) (start.x + len * Math.cos(angle)), (int) (start.y + len * Math.sin(angle))), len * lenf, offset + angle - spread / 4 + i * (spread / branches) + 0.4 * (rand.nextFloat() - 0.5), width * widthf, offset, spread, c, nRand);
         }
     }
 
+    public void paint(Graphics g){
+        super.paint(g);
+        if(!DEBUG)
+            return;
+        g.setColor(new Color(0,0,0,80));
+        g.fillRect(5,5,200,200);
+        g.setColor(Color.WHITE);
+        g.drawString("DEBUG:",10,20);
+    }
 
 
     @Override
@@ -215,7 +226,6 @@ public class GraphicPane extends GLJPanel implements GLEventListener {
         gl.glDeleteShader(fragmentShader);
         gl.glDeleteProgram(shaderProgram);
     }
-
 
     private int compile(GL2GL3 gl, int shaderType, String program) {
         int shader = gl.glCreateShader(shaderType);
@@ -235,8 +245,6 @@ public class GraphicPane extends GLJPanel implements GLEventListener {
         }
         return shader;
     }
-
-
 
     @Override
     public void reshape(GLAutoDrawable glAutoDrawable, int i, int i2, int i3, int i4) {
