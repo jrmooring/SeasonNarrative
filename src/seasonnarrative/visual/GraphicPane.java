@@ -46,11 +46,10 @@ public class GraphicPane extends GLJPanel implements GLEventListener {
     private int shaderProgram;
 
     private long gfTime = 0, goTime = 0;
-    private long cfTime = 0, coTime = 0;
 
     private Texture tex;
     private Graphics2D g;
-    private final BufferedImage img = new BufferedImage(1024, 1024, BufferedImage.TYPE_INT_ARGB);;
+    private final BufferedImage img = toCompatibleImage(new BufferedImage(1024, 1024, BufferedImage.TYPE_INT_ARGB));
 
     private float[][] points = new float[25][3];
     private boolean updated = false;
@@ -135,49 +134,37 @@ public class GraphicPane extends GLJPanel implements GLEventListener {
 
         }
 
-        new Thread(){
-            public void run(){
-                while(true){
-                    while(updated){
-                        try {
-                            Thread.sleep(2);
-                        } catch (InterruptedException ignore) {
-                        }
-                    }
-
-                    cfTime = System.currentTimeMillis() - coTime;
-                    coTime = System.currentTimeMillis();
-
-                    float age = 7;
-                    g.setColor(new Color(126, 0, 0, 0));
-                    g.fillRect(0, 0, 1024, 1024);
-
-
-                    Random rand = new Random();
-                    rand.setSeed(1000);
-
-                    g.setColor(Color.white);
-                    for (float[] point : points){
-                        point[1] -= Math.random()*0.05 + (point[2] - 1)*3;
-                        if(point[1] < 0)
-                            point[1] = 1024;
-                        point[0] += wind*10*(point[2] - 1)+ Math.random()*0.02;
-                        if(point[0] < 0)
-                            point[0] = 1024;
-                        if(point[0] > 1024)
-                            point[0] = 0;
-                        g.fillOval((int) point[0], (int) point[1], (int) point[2], (int) point[2]);
-                    }
-
-                    drawTree(g, 0, age, 2, new Point(512, 0), 25 + age * 6.5, 1.57, age * 2.3f, wind * -0.2f, 1.0f + age / 24.0f - Math.abs(wind) * 0.7f, new Color((int) (127 * Math.sin(time)) + 127, (int) (127 * Math.sin(time + 7)) + 127, (int) (127 * Math.sin(time + 5)) + 127, 255), rand);
-                    updated = true;
-                }
-            }
-        }.start();
 
     }
 
+    private BufferedImage toCompatibleImage(BufferedImage image)
+    {
+        // obtain the current system graphical settings
+        GraphicsConfiguration gfx_config = GraphicsEnvironment.
+                getLocalGraphicsEnvironment().getDefaultScreenDevice().
+                getDefaultConfiguration();
 
+	/*
+	 * if image is already compatible and optimized for current system
+	 * settings, simply return it
+	 */
+        if (image.getColorModel().equals(gfx_config.getColorModel()))
+            return image;
+
+        // image is not optimized, so create a new image that is
+        BufferedImage new_image = gfx_config.createCompatibleImage(
+                image.getWidth(), image.getHeight(), image.getTransparency());
+
+        // get the graphics context of the new image to draw the old image on
+        Graphics2D g2d = (Graphics2D) new_image.getGraphics();
+
+        // actually draw the image and dispose of context no longer needed
+        g2d.drawImage(image, 0, 0, null);
+        g2d.dispose();
+
+        // return the new optimized image
+        return new_image;
+    }
 
 
 
@@ -225,10 +212,31 @@ public class GraphicPane extends GLJPanel implements GLEventListener {
 
         gl.glActiveTexture(GL3.GL_TEXTURE0);
 
-        if(updated){
-            tex.updateImage(gl, AWTTextureIO.newTextureData(gl.getGLProfile(), img, true));
-            updated = false;
+
+        float age = 12;
+        g.setColor(new Color(126, 0, 0, 0));
+        g.fillRect(0, 0, 1024, 1024);
+
+
+        Random rand = new Random();
+        rand.setSeed(1000);
+
+        g.setColor(Color.white);
+        for (float[] point : points){
+            point[1] -= Math.random()*0.05 + (point[2] - 1)*3;
+            if(point[1] < 0)
+                point[1] = 1024;
+            point[0] += wind*10*(point[2] - 1)+ Math.random()*0.02;
+            if(point[0] < 0)
+                point[0] = 1024;
+            if(point[0] > 1024)
+                point[0] = 0;
+            g.fillOval((int) point[0], (int) point[1], (int) point[2], (int) point[2]);
         }
+
+        drawTree(g, 0, age, 2, new Point(512, 0), 25 + age * 6.5, 1.57, age * 2.3f, wind * -0.2f, 1.0f + age / 24.0f - Math.abs(wind) * 0.7f, new Color((int) (127 * Math.sin(time)) + 127, (int) (127 * Math.sin(time + 7)) + 127, (int) (127 * Math.sin(time + 5)) + 127, 255), rand);
+
+        tex.updateImage(gl, AWTTextureIO.newTextureData(gl.getGLProfile(), img, true));
 
         tex.bind(gl);
 
@@ -265,9 +273,8 @@ public class GraphicPane extends GLJPanel implements GLEventListener {
         g.fillRect(5, 5, 200, 200);
         g.setColor(Color.WHITE);
         g.drawString("DEBUG:", 10, 20);
-        g.drawString(String.format("GPU FPS: %.1f", 1000.0/ gfTime), 10, 40);
-        g.drawString(String.format("CPU FPS: %.1f", 1000.0/ cfTime), 10, 60);
-        g.drawString(String.format("wind: %.4f", wind), 10, 80);
+        g.drawString(String.format("FPS: %.1f", 1000.0/ gfTime), 10, 40);
+        g.drawString(String.format("wind: %.4f", wind), 10, 60);
     }
 
 
