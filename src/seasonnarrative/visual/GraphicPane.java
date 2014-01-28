@@ -7,6 +7,9 @@ import com.jogamp.opengl.util.texture.awt.AWTTextureIO;
 import javax.media.opengl.*;
 import javax.media.opengl.awt.GLJPanel;
 import java.awt.*;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -16,7 +19,7 @@ import java.util.Random;
 import java.util.Scanner;
 
 
-public class GraphicPane extends GLJPanel implements GLEventListener {
+public class GraphicPane extends GLJPanel implements GLEventListener, KeyListener {
 
     private static final String VERTEX_SHADER =
             "#version 130\n" +
@@ -39,12 +42,14 @@ public class GraphicPane extends GLJPanel implements GLEventListener {
 
     private final float vertices[] = new float[]{-1, -1, 1, -1, 1, 1, -1, 1};
 
-    private static final boolean DEBUG = true;
+    private boolean DEBUG = true;
+    private int treeSeed = 989;
 
     private int vertexShader;
     private int fragmentShader;
     private int shaderProgram;
 
+    //FPS counters
     private long gfTime = 0, goTime = 0;
 
     private Texture tex;
@@ -52,7 +57,6 @@ public class GraphicPane extends GLJPanel implements GLEventListener {
     private final BufferedImage img = toCompatibleImage(new BufferedImage(1024, 1024, BufferedImage.TYPE_INT_ARGB));
 
     private float[][] points = new float[25][3];
-    private boolean updated = false;
 
 
     private float time = 0, low = 0, med = 0, high = 0, mval = 0;
@@ -64,6 +68,7 @@ public class GraphicPane extends GLJPanel implements GLEventListener {
     public GraphicPane() {
         super();
         addGLEventListener(this);
+        addKeyListener(this);
 
         for (int i = 0; i < points.length; i++) {
             points[i][0] = (float) Math.random() * 1024;
@@ -97,6 +102,8 @@ public class GraphicPane extends GLJPanel implements GLEventListener {
             }
         }.start();
 
+        this.setFocusable(true);
+        requestFocus();
 
 
     }
@@ -106,7 +113,7 @@ public class GraphicPane extends GLJPanel implements GLEventListener {
     public void init(GLAutoDrawable drawable) {
         GL2GL3 gl = drawable.getGL().getGL2GL3();
 
-        //set up shaders
+        // set up shaders
         vertexShader = compile(gl, GL3.GL_VERTEX_SHADER, VERTEX_SHADER);
         fragmentShader = compile(gl, GL3.GL_FRAGMENT_SHADER, FRAGMENT_SHADER);
         shaderProgram = gl.glCreateProgram();
@@ -114,13 +121,12 @@ public class GraphicPane extends GLJPanel implements GLEventListener {
         gl.glAttachShader(shaderProgram, fragmentShader);
         gl.glLinkProgram(shaderProgram);
 
-        //Set up tree drawing
+        // set up tree drawing
         g = (Graphics2D) img.getGraphics();
         g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC));
         g.setRenderingHint(
                 RenderingHints.KEY_ANTIALIASING,
                 RenderingHints.VALUE_ANTIALIAS_ON);
-
 
         try {
             tex = AWTTextureIO.newTexture(gl.getGLProfile(), img, true);
@@ -130,24 +136,19 @@ public class GraphicPane extends GLJPanel implements GLEventListener {
             tex.bind(gl);
         } catch (Exception e) {
             e.printStackTrace();
-
-
         }
-
 
     }
 
-    private BufferedImage toCompatibleImage(BufferedImage image)
-    {
+    private BufferedImage toCompatibleImage(BufferedImage image) {
         // obtain the current system graphical settings
         GraphicsConfiguration gfx_config = GraphicsEnvironment.
                 getLocalGraphicsEnvironment().getDefaultScreenDevice().
                 getDefaultConfiguration();
 
-	/*
-	 * if image is already compatible and optimized for current system
-	 * settings, simply return it
-	 */
+        // if image is already compatible and optimized for current system
+        // settings, simply return it
+
         if (image.getColorModel().equals(gfx_config.getColorModel()))
             return image;
 
@@ -167,7 +168,6 @@ public class GraphicPane extends GLJPanel implements GLEventListener {
     }
 
 
-
     @Override
     public void display(GLAutoDrawable drawable) {
         GL2GL3 gl = drawable.getGL().getGL2GL3();
@@ -180,7 +180,6 @@ public class GraphicPane extends GLJPanel implements GLEventListener {
         gl.glClear(GL3.GL_COLOR_BUFFER_BIT);
 
         gl.glUseProgram(shaderProgram);
-
 
         IntBuffer intBuffer = Buffers.newDirectIntBuffer(1);
         gl.glGenBuffers(1, intBuffer);
@@ -198,7 +197,7 @@ public class GraphicPane extends GLJPanel implements GLEventListener {
 
 
         wind = (float) Math.sin(time * 0.2);
-        sqRefract = 0;//(float)Math.sin(time)*0.1f;
+        sqRefract = 0;
 
         location = gl.glGetUniformLocation(shaderProgram, "low");
         gl.glUniform1f(location, ilow);
@@ -214,27 +213,30 @@ public class GraphicPane extends GLJPanel implements GLEventListener {
 
 
         float age = 12;
+        //clear image
         g.setColor(new Color(126, 0, 0, 0));
         g.fillRect(0, 0, 1024, 1024);
 
 
         Random rand = new Random();
-        rand.setSeed(1000);
+        rand.setSeed(treeSeed);
 
+        // flakes
         g.setColor(Color.white);
-        for (float[] point : points){
-            point[1] -= Math.random()*0.05 + (point[2] - 1)*3;
-            if(point[1] < 0)
+        for (float[] point : points) {
+            point[1] -= Math.random() * 0.05 + (point[2] - 1) * 3;
+            if (point[1] < 0)
                 point[1] = 1024;
-            point[0] += wind*10*(point[2] - 1)+ Math.random()*0.02;
-            if(point[0] < 0)
+            point[0] += wind * 10 * (point[2] - 1) + Math.random() * 0.02;
+            if (point[0] < 0)
                 point[0] = 1024;
-            if(point[0] > 1024)
+            if (point[0] > 1024)
                 point[0] = 0;
             g.fillOval((int) point[0], (int) point[1], (int) point[2], (int) point[2]);
         }
 
-        drawTree(g, 0, age, 2, new Point(512, 0), 25 + age * 6.5, 1.57, age * 2.3f, wind * -0.2f, 1.0f + age / 24.0f - Math.abs(wind) * 0.7f, new Color((int) (127 * Math.sin(time)) + 127, (int) (127 * Math.sin(time + 7)) + 127, (int) (127 * Math.sin(time + 5)) + 127, 255), rand);
+        // draw the tree with heavy magic number fuckery
+        drawTree(g, 0, age, 2, new Point(512, 0), 25 + age * 6.5, 1.57, age * 2.3f, wind * -0.2f, 1.0f + age / 24.0f - Math.abs(wind) * 0.7f, new Color((int) (127 * Math.sin(time)) + 127, (int) (127 * Math.sin(time + 7)) + 127, (int) (127 * Math.sin(time + 5)) + 127, 255), rand, age - 1, Color.green);
 
         tex.updateImage(gl, AWTTextureIO.newTextureData(gl.getGLProfile(), img, true));
 
@@ -248,20 +250,31 @@ public class GraphicPane extends GLJPanel implements GLEventListener {
 
     }
 
-    public void drawTree(Graphics2D gg, int depth, float maxDepth, int branches, Point start, double len, double angle, float width, float offset, float spread, Color c, Random rand) {
+    public void drawTree(Graphics2D gg, int depth, float maxDepth, int branches, Point start, double len, double angle, float width, float offset, float spread, Color c, Random rand, float leafSize, Color leafColor) {
         gg.setColor(c);
         gg.setStroke(new BasicStroke(width));
         double nlen = len;
+
+        float lsize =  leafSize/2 + (float)rand.nextFloat()*leafSize/2;
         if (depth == Math.floor(maxDepth))
             nlen *= maxDepth - Math.floor(maxDepth);
-        gg.draw(new Line2D.Float(start.x, start.y, (int) (start.x + nlen * Math.cos(angle)), (int) (start.y + nlen * Math.sin(angle))));
-        if (depth + 1 >= maxDepth)
+
+            gg.draw(new Line2D.Float(start.x, start.y, (int) (start.x + nlen * Math.cos(angle)), (int) (start.y + nlen * Math.sin(angle))));
+
+        if (depth  >= maxDepth){
+            gg.setColor(leafColor);
+            gg.fill(new Ellipse2D.Float(start.x - lsize/2, start.y - lsize/2, lsize, lsize));
             return;
+        }
         for (int i = 0; i < branches; i++) {
             Random nRand = new Random(rand.nextInt());
             len += 5f * (rand.nextFloat() - 0.5);
-            if(rand.nextFloat()<0.95)
-            drawTree(gg, depth + 1, maxDepth, branches, new Point((int) (start.x + len * Math.cos(angle + i * 0.05 - 0.025)), (int) (start.y + len * Math.sin(angle + i * 0.05 - 0.025))), len * lenf, offset + angle - spread / 4 + i * (spread / branches) + spread * 0.45 * (rand.nextFloat() - 0.5), width * widthf, offset, spread, c, nRand);
+            if (rand.nextFloat() < 0.95)
+                drawTree(gg, depth + 1, maxDepth, branches, new Point((int) (start.x + len * Math.cos(angle + i * 0.05 - 0.025)), (int) (start.y + len * Math.sin(angle + i * 0.05 - 0.025))), len * lenf, offset + angle - spread / 4 + i * (spread / branches) + spread * 0.45 * (rand.nextFloat() - 0.5), width * widthf, offset, spread, c, nRand, leafSize, leafColor);
+            else{
+                gg.setColor(leafColor);
+                gg.fill(new Ellipse2D.Float(start.x - lsize/2, start.y - lsize/2, lsize, lsize));
+            }
         }
     }
 
@@ -273,8 +286,9 @@ public class GraphicPane extends GLJPanel implements GLEventListener {
         g.fillRect(5, 5, 200, 200);
         g.setColor(Color.WHITE);
         g.drawString("DEBUG:", 10, 20);
-        g.drawString(String.format("FPS: %.1f", 1000.0/ gfTime), 10, 40);
+        g.drawString(String.format("FPS: %.1f", 1000.0 / gfTime), 10, 40);
         g.drawString(String.format("wind: %.4f", wind), 10, 60);
+        g.drawString(String.format("tree seed: %d", treeSeed), 10, 80);
     }
 
 
@@ -307,8 +321,28 @@ public class GraphicPane extends GLJPanel implements GLEventListener {
         return shader;
     }
 
+
+    @Override
+    public void keyPressed(KeyEvent e) {
+        if (e.getKeyChar() == 'd')
+            DEBUG = !DEBUG;
+        if(e.getKeyCode() == KeyEvent.VK_UP)
+            ++treeSeed;
+        if(e.getKeyCode() == KeyEvent.VK_DOWN)
+            --treeSeed;
+    }
+
+    @Override
+    public void keyReleased(KeyEvent e) {
+    }
+
+    @Override
+    public void keyTyped(KeyEvent e) {
+    }
+
     @Override
     public void reshape(GLAutoDrawable glAutoDrawable, int i, int i2, int i3, int i4) {
     }
+
 
 }
