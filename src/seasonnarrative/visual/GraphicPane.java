@@ -45,20 +45,32 @@ public class GraphicPane extends GLJPanel implements GLEventListener {
     private int fragmentShader;
     private int shaderProgram;
 
+    private long gfTime = 0, goTime = 0;
+    private long cfTime = 0, coTime = 0;
+
     private Texture tex;
-    private Graphics g;
-    private BufferedImage img;
+    private Graphics2D g;
+    private final BufferedImage img = new BufferedImage(1024, 1024, BufferedImage.TYPE_INT_ARGB);;
+
+    private float[][] points = new float[25][3];
+    private boolean updated = false;
 
 
     private float time = 0, low = 0, med = 0, high = 0, mval = 0;
-    private float ilow = 0, imed = 0, ihigh = 0, imval = 0;
+    private float ilow = 0, imed = 0, sqRefract = 0, wind = 0;
 
-    private float len = 50, lenf = 0.88f, offset = 0.0f, spread = 0.9f, widthf = 0.66f;
+    private float len = 50, lenf = 0.86f, offset = 0.0f, spread = 0.9f, widthf = 0.66f;
 
 
     public GraphicPane() {
         super();
         addGLEventListener(this);
+
+        for (int i = 0; i < points.length; i++) {
+            points[i][0] = (float) Math.random() * 1024;
+            points[i][1] = (float) Math.random() * 1024;
+            points[i][2] = (float) Math.random() * 7 + 1;
+        }
 
         try {
             StringBuilder sb = new StringBuilder();
@@ -87,9 +99,8 @@ public class GraphicPane extends GLJPanel implements GLEventListener {
         }.start();
 
 
+
     }
-
-
 
 
     @Override
@@ -105,26 +116,77 @@ public class GraphicPane extends GLJPanel implements GLEventListener {
         gl.glLinkProgram(shaderProgram);
 
         //Set up tree drawing
-        img = new BufferedImage(1024,1024,BufferedImage.TYPE_INT_ARGB);
-        g = img.getGraphics();
+        g = (Graphics2D) img.getGraphics();
+        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC));
+        g.setRenderingHint(
+                RenderingHints.KEY_ANTIALIASING,
+                RenderingHints.VALUE_ANTIALIAS_ON);
 
-        try{
+
+        try {
             tex = AWTTextureIO.newTexture(gl.getGLProfile(), img, true);
             tex.setTexParameteri(gl, GL3.GL_TEXTURE_MIN_FILTER, GL3.GL_LINEAR);
             tex.setTexParameteri(gl, GL3.GL_TEXTURE_MAG_FILTER, GL3.GL_LINEAR);
             tex.enable(gl);
             tex.bind(gl);
-        }catch(Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
+
+
         }
+
+        new Thread(){
+            public void run(){
+                while(true){
+                    while(updated){
+                        try {
+                            Thread.sleep(2);
+                        } catch (InterruptedException ignore) {
+                        }
+                    }
+
+                    cfTime = System.currentTimeMillis() - coTime;
+                    coTime = System.currentTimeMillis();
+
+                    float age = 7;
+                    g.setColor(new Color(126, 0, 0, 0));
+                    g.fillRect(0, 0, 1024, 1024);
+
+
+                    Random rand = new Random();
+                    rand.setSeed(1000);
+
+                    g.setColor(Color.white);
+                    for (float[] point : points){
+                        point[1] -= Math.random()*0.05 + (point[2] - 1)*3;
+                        if(point[1] < 0)
+                            point[1] = 1024;
+                        point[0] += wind*10*(point[2] - 1)+ Math.random()*0.02;
+                        if(point[0] < 0)
+                            point[0] = 1024;
+                        if(point[0] > 1024)
+                            point[0] = 0;
+                        g.fillOval((int) point[0], (int) point[1], (int) point[2], (int) point[2]);
+                    }
+
+                    drawTree(g, 0, age, 2, new Point(512, 0), 25 + age * 6.5, 1.57, age * 2.3f, wind * -0.2f, 1.0f + age / 24.0f - Math.abs(wind) * 0.7f, new Color((int) (127 * Math.sin(time)) + 127, (int) (127 * Math.sin(time + 7)) + 127, (int) (127 * Math.sin(time + 5)) + 127, 255), rand);
+                    updated = true;
+                }
+            }
+        }.start();
 
     }
 
-    private int x = 0;
+
+
+
 
     @Override
     public void display(GLAutoDrawable drawable) {
         GL2GL3 gl = drawable.getGL().getGL2GL3();
+
+        gfTime = System.currentTimeMillis() - goTime;
+        goTime = System.currentTimeMillis();
 
         gl.glClearColor(0, 0, 0, 1);
 
@@ -148,39 +210,29 @@ public class GraphicPane extends GLJPanel implements GLEventListener {
         gl.glUniform1f(location, time += 0.1);
 
 
+        wind = (float) Math.sin(time * 0.2);
+        sqRefract = 0;//(float)Math.sin(time)*0.1f;
+
         location = gl.glGetUniformLocation(shaderProgram, "low");
         gl.glUniform1f(location, ilow);
         location = gl.glGetUniformLocation(shaderProgram, "med");
         gl.glUniform1f(location, imed);
-        location = gl.glGetUniformLocation(shaderProgram, "high");
-        gl.glUniform1f(location, ihigh);
-        location = gl.glGetUniformLocation(shaderProgram, "mval");
-        gl.glUniform1f(location, imval);
+        location = gl.glGetUniformLocation(shaderProgram, "wind");
+        gl.glUniform1f(location, wind);
+        location = gl.glGetUniformLocation(shaderProgram, "sqRefract");
+        gl.glUniform1f(location, sqRefract);
 
 
         gl.glActiveTexture(GL3.GL_TEXTURE0);
 
-        //draw tree
-        //       .< this value controls frequency of cpu rendering
-        if(x++ % 2 == 0){
-            Graphics2D gg = (Graphics2D) g;
-            gg.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC));
-            gg.setRenderingHint(
-                    RenderingHints.KEY_ANTIALIASING,
-                    RenderingHints.VALUE_ANTIALIAS_ON);
-            gg.setColor(new Color(126, 0, 0, 0));
-            gg.fillRect(0, 0, 1024, 1024);
-
-            Random rand = new Random();
-            rand.setSeed(1000);
-            drawTree(gg, 0,(float)( Math.sin(time) + 1) * 6 , 2, new Point(512, 0), 40 + (float)( Math.sin(time) + 1)*50, 1.57, (float)( Math.sin(time) + 1)*10, (float) Math.sin(time * 0.1) * 0.2f, 0.9f + (float) Math.sin(time * 0.2) * 0.7f, new Color((int)(127*Math.sin(time))+127,(int)(127*Math.sin(time+7))+127,(int)(127*Math.sin(time+5))+127,255), rand);
-
-            tex.updateImage(gl,AWTTextureIO.newTextureData(gl.getGLProfile(), img, true));
+        if(updated){
+            tex.updateImage(gl, AWTTextureIO.newTextureData(gl.getGLProfile(), img, true));
+            updated = false;
         }
 
         tex.bind(gl);
 
-        gl.glUniform1i(gl.glGetUniformLocation(shaderProgram,"tex"), 0);
+        gl.glUniform1i(gl.glGetUniformLocation(shaderProgram, "tex"), 0);
 
         gl.glDrawArrays(GL3.GL_TRIANGLE_FAN, 0, 6);
 
@@ -188,32 +240,34 @@ public class GraphicPane extends GLJPanel implements GLEventListener {
 
     }
 
-    public void setTree(float height, float branchLength, float width, float offset, float spread){}
-
-    public void drawTree(Graphics2D gg, int depth, float maxDepth, int branches, Point start, double len, double angle, float width, float offset, float spread, Color c, Random rand){
+    public void drawTree(Graphics2D gg, int depth, float maxDepth, int branches, Point start, double len, double angle, float width, float offset, float spread, Color c, Random rand) {
         gg.setColor(c);
         gg.setStroke(new BasicStroke(width));
         double nlen = len;
-        if(depth  == Math.floor(maxDepth))
+        if (depth == Math.floor(maxDepth))
             nlen *= maxDepth - Math.floor(maxDepth);
         gg.draw(new Line2D.Float(start.x, start.y, (int) (start.x + nlen * Math.cos(angle)), (int) (start.y + nlen * Math.sin(angle))));
-        if(depth + 1 >= maxDepth)
+        if (depth + 1 >= maxDepth)
             return;
-        for(int i = 0; i < branches; i++){
+        for (int i = 0; i < branches; i++) {
             Random nRand = new Random(rand.nextInt());
-            len += 5f*(rand.nextFloat() - 0.5);
-            drawTree(gg, depth + 1, maxDepth, branches, new Point((int) (start.x + len * Math.cos(angle)), (int) (start.y + len * Math.sin(angle))), len * lenf, offset + angle - spread / 4 + i * (spread / branches) + 0.4 * (rand.nextFloat() - 0.5), width * widthf, offset, spread, c, nRand);
+            len += 5f * (rand.nextFloat() - 0.5);
+            if(rand.nextFloat()<0.95)
+            drawTree(gg, depth + 1, maxDepth, branches, new Point((int) (start.x + len * Math.cos(angle + i * 0.05 - 0.025)), (int) (start.y + len * Math.sin(angle + i * 0.05 - 0.025))), len * lenf, offset + angle - spread / 4 + i * (spread / branches) + spread * 0.45 * (rand.nextFloat() - 0.5), width * widthf, offset, spread, c, nRand);
         }
     }
 
-    public void paint(Graphics g){
+    public void paint(Graphics g) {
         super.paint(g);
-        if(!DEBUG)
+        if (!DEBUG)
             return;
-        g.setColor(new Color(0,0,0,80));
-        g.fillRect(5,5,200,200);
+        g.setColor(new Color(0, 0, 0, 80));
+        g.fillRect(5, 5, 200, 200);
         g.setColor(Color.WHITE);
-        g.drawString("DEBUG:",10,20);
+        g.drawString("DEBUG:", 10, 20);
+        g.drawString(String.format("GPU FPS: %.1f", 1000.0/ gfTime), 10, 40);
+        g.drawString(String.format("CPU FPS: %.1f", 1000.0/ cfTime), 10, 60);
+        g.drawString(String.format("wind: %.4f", wind), 10, 80);
     }
 
 

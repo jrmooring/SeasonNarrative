@@ -5,7 +5,8 @@ uniform float time;
 uniform float low;
 uniform float med;
 uniform float high;
-uniform float mval;
+uniform float wind;
+uniform float sqRefract;
 
 
 uniform sampler2D tex;
@@ -26,6 +27,9 @@ vec4 rotate(vec4 v, float r){
 
 void main(void) {
 
+    vec4 ffPos = fPos;
+    ffPos.y *= 8./12;
+
     vec4 nPos = vec4(0);
 
 
@@ -33,43 +37,42 @@ void main(void) {
     float treeFuzz = 0.0025;
 
     //cubes
-    float sqsize = 4+sin(time*0.2);
-    float refract = 0.0;
-    vec4 dx = floor((rotate(fPos,time*0.01)-vec4(0,-1.0,0,0))*sqsize)/sqsize;
+    float sqsize = 3+sin(time*0.2);
+    vec4 dx = floor((rotate(ffPos,time*0.01)-vec4(0,-1.0,0,0))*sqsize)/sqsize;
     if(dx.x == 0)
         dx.x = 0.000001;
     vec4 ddx = normalize(dx);
-    nPos += ddx*length(dx)*refract;
+    nPos -= ddx*length(dx)*sqRefract;
 
 
     //blur
-    nPos += fuzz(fPos,treeFuzz);
+    nPos += fuzz(ffPos,treeFuzz);
 
-    vec4 tcolor = texture2D(tex,nPos.xy*0.5 + vec2(0.5,0.5)).rgba;
+    vec4 tcolor = texture2D(tex,nPos.xy*0.5 + vec2(0.5,0.35)).rgba;
 
     //pre wind-spin fuzz
     nPos = fuzz(nPos, 0.1);
 
     //wind spin
-    float rot = 0*sin(time);
-    nPos = rotate(nPos,-rot*3*pow(2,-256*pow(1.0-length(nPos),2)));
+    vec4 spinCenter = vec4(wind*0.5,0,0,0);
+    nPos = rotate(nPos,-wind*1*pow(2,-256*pow(1.1+abs(wind)*0.05-distance(nPos,spinCenter),2)));
 
     //post wind spin fuzz
     nPos = fuzz(nPos, 0.1);
 
 
     //background color points
-    vec4 bgP1 = vec4(1.3, 1.3, 0, 0);
-    vec4 bgC1 = vec4(0.3, 0.4, 0.8, 0);
+    vec4 bgP1 = vec4(1.1, 1.1, 0, 0);
+    vec4 bgC1 = vec4(0.4, 0.5, 0.9, 0);
 
-    vec4 bgP2 = vec4(-1.3, 1.3, 0, 0);
-    vec4 bgC2 = vec4(0.4, 0.3, 0.8, 0);
+    vec4 bgP2 = vec4(-1.1, 1.1, 0, 0);
+    vec4 bgC2 = vec4(0.5, 0.4, 0.9, 0);
 
-    vec4 bgP3 = vec4(0, -1.0, 0, 0);
+    vec4 bgP3 = vec4(0, -1.7, 0, 0);
     vec4 bgC3 = vec4(0.2, 0.2, 0.5, 0);
 
-    vec4 bgP4 = vec4(0, 0, 0, 0);
-    vec4 bgC4 = vec4(0.0, 0.0, 0.2, 0);
+    vec4 bgP4 = vec4(0, -0.2, 0, 0);
+    vec4 bgC4 = vec4(0.7, 0.7, 0.2, 0);
 
 
     //background color blending
