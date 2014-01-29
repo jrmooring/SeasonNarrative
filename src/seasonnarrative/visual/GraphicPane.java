@@ -212,7 +212,7 @@ public class GraphicPane extends GLJPanel implements GLEventListener, KeyListene
         gl.glActiveTexture(GL3.GL_TEXTURE0);
 
 
-        float age = 12;
+        float age = (float)Math.sin(time)*6+6;
         //clear image
         g.setColor(new Color(126, 0, 0, 0));
         g.fillRect(0, 0, 1024, 1024);
@@ -236,7 +236,7 @@ public class GraphicPane extends GLJPanel implements GLEventListener, KeyListene
         }
 
         // draw the tree with heavy magic number fuckery
-        drawTree(g, 0, age, 2, new Point(512, 0), 25 + age * 6.5, 1.57, age * 2.3f, wind * -0.2f, 1.0f + age / 24.0f - Math.abs(wind) * 0.7f, new Color((int) (127 * Math.sin(time)) + 127, (int) (127 * Math.sin(time + 7)) + 127, (int) (127 * Math.sin(time + 5)) + 127, 255), rand, age - 1, Color.green);
+        drawTree(g, 0, age, 2, new Point(512, 0), 25 + age * 6.5f, 1.57f, age * 2.3f, wind * -0.2f, 1.0f + age / 24.0f - Math.abs(wind) * 0.7f, new Color((int) (127 * Math.sin(time)) + 127, (int) (127 * Math.sin(time + 7)) + 127, (int) (127 * Math.sin(time + 5)) + 127, 255), rand, age*1.5f-1, Color.green);
 
         tex.updateImage(gl, AWTTextureIO.newTextureData(gl.getGLProfile(), img, true));
 
@@ -250,20 +250,20 @@ public class GraphicPane extends GLJPanel implements GLEventListener, KeyListene
 
     }
 
-    public void drawTree(Graphics2D gg, int depth, float maxDepth, int branches, Point start, double len, double angle, float width, float offset, float spread, Color c, Random rand, float leafSize, Color leafColor) {
+    public void drawTree(Graphics2D gg, int depth, float maxDepth, int branches, Point start, float len, double angle, float width, float offset, float spread, Color c, Random rand, float leafSize, Color leafColor) {
         gg.setColor(c);
         gg.setStroke(new BasicStroke(width));
-        double nlen = len;
+        float nlen = len;
 
-        float lsize =  leafSize/2 + (float)rand.nextFloat()*leafSize/2;
-        if (depth == Math.floor(maxDepth))
+        float lsize = leafSize / 2 + rand.nextFloat() * leafSize / 2;
+        if (depth - 1 == Math.floor(maxDepth))
             nlen *= maxDepth - Math.floor(maxDepth);
 
-            gg.draw(new Line2D.Float(start.x, start.y, (int) (start.x + nlen * Math.cos(angle)), (int) (start.y + nlen * Math.sin(angle))));
+        gg.draw(new Line2D.Float(start.x, start.y, (int) (start.x + nlen * Math.cos(angle)), (int) (start.y + nlen * Math.sin(angle))));
 
-        if (depth  >= maxDepth){
+        if (depth >= maxDepth) {
             gg.setColor(leafColor);
-            gg.fill(new Ellipse2D.Float(start.x - lsize/2, start.y - lsize/2, lsize, lsize));
+            gg.fill(new Ellipse2D.Float(start.x + nlen * (float)Math.cos(angle) - lsize / 2, start.y + nlen * (float)Math.sin(angle)- lsize / 2, lsize, lsize));
             return;
         }
         for (int i = 0; i < branches; i++) {
@@ -271,9 +271,9 @@ public class GraphicPane extends GLJPanel implements GLEventListener, KeyListene
             len += 5f * (rand.nextFloat() - 0.5);
             if (rand.nextFloat() < 0.95)
                 drawTree(gg, depth + 1, maxDepth, branches, new Point((int) (start.x + len * Math.cos(angle + i * 0.05 - 0.025)), (int) (start.y + len * Math.sin(angle + i * 0.05 - 0.025))), len * lenf, offset + angle - spread / 4 + i * (spread / branches) + spread * 0.45 * (rand.nextFloat() - 0.5), width * widthf, offset, spread, c, nRand, leafSize, leafColor);
-            else{
+            else {
                 gg.setColor(leafColor);
-                gg.fill(new Ellipse2D.Float(start.x - lsize/2, start.y - lsize/2, lsize, lsize));
+                gg.fill(new Ellipse2D.Float((float) (start.x + len * Math.cos(angle + i * 0.05 - 0.025) - lsize / 2), (float) (start.y + len * Math.sin(angle + i * 0.05 - 0.025)) - lsize / 2, lsize, lsize));
             }
         }
     }
@@ -326,9 +326,9 @@ public class GraphicPane extends GLJPanel implements GLEventListener, KeyListene
     public void keyPressed(KeyEvent e) {
         if (e.getKeyChar() == 'd')
             DEBUG = !DEBUG;
-        if(e.getKeyCode() == KeyEvent.VK_UP)
+        if (e.getKeyCode() == KeyEvent.VK_UP)
             ++treeSeed;
-        if(e.getKeyCode() == KeyEvent.VK_DOWN)
+        if (e.getKeyCode() == KeyEvent.VK_DOWN)
             --treeSeed;
     }
 
