@@ -77,6 +77,7 @@ public class Keyframes {
                 String s = sc.nextLine();
                 if(s.trim().startsWith("#"))
                     continue;
+                s += "," + sc.nextLine();
                 String[] vals = s.replace("(", "").replace(")", "").split(",");
                 float[] params = new float[vals.length - 1];
                 for(int i = 1; i < vals.length; i++){
