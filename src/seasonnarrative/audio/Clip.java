@@ -36,7 +36,7 @@ public class Clip{
                             baseFormat.getChannels() * 2, baseFormat.getSampleRate(),
                             false);
                     audio = new double[AudioSystem.getAudioFileFormat(file)
-                            .getByteLength() * 4];
+                            .getByteLength() * 8];
                     din = AudioSystem.getAudioInputStream(decodedFormat, in);
 
                     byte[] data = new byte[4096];
