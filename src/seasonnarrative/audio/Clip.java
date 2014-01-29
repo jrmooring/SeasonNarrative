@@ -20,6 +20,8 @@ public class Clip{
     private int loaded = 0;
     private int location = 0;
 
+    public long tStart = -1;
+
 
 
     public Clip(final String f) {
@@ -76,6 +78,8 @@ public class Clip{
     }
 
     public double read() {
+        if(tStart < 0)
+            tStart = System.currentTimeMillis();
         if (playing) {
             try {
                 while(location >= loaded){
@@ -93,4 +97,12 @@ public class Clip{
             return 0;
     }
 
+
+    public void rr(float f) {
+        location -= f * LineOut.SAMPLING_RATE;
+    }
+
+    public void ff(float f) {
+        location += f * LineOut.SAMPLING_RATE;
+    }
 }

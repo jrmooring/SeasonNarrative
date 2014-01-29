@@ -54,7 +54,7 @@ void main(void) {
     nPos = fuzz(nPos, 0.1);
 
     //wind spin
-    vec4 spinCenter = vec4(wind*0.5,0,0,0);
+    vec4 spinCenter = vec4(wind*0.5,-0.23,0,0);
     nPos = rotate(nPos,-wind*1*pow(2,-256*pow(1.1+abs(wind)*0.05-distance(nPos,spinCenter),2)));
 
     //post wind spin fuzz
