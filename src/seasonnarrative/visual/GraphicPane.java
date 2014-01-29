@@ -10,12 +10,7 @@ import seasonnarrative.keyframes.Keyframes;
 import javax.media.opengl.*;
 import javax.media.opengl.awt.GLJPanel;
 import java.awt.*;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseMotionListener;
-import java.awt.geom.Ellipse2D;
-import java.awt.geom.Line2D;
+import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.nio.FloatBuffer;
@@ -24,7 +19,7 @@ import java.util.Random;
 import java.util.Scanner;
 
 
-public class GraphicPane extends GLJPanel implements GLEventListener, KeyListener, MouseMotionListener {
+public class GraphicPane extends GLJPanel implements GLEventListener, KeyListener, MouseMotionListener, MouseListener {
 
     private static final String VERTEX_SHADER =
             "#version 130\n" +
@@ -47,6 +42,7 @@ public class GraphicPane extends GLJPanel implements GLEventListener, KeyListene
 
     private final float vertices[] = new float[]{-1, -1, 1, -1, 1, 1, -1, 1};
 
+
     private Keyframes keyFrames;
     private Clip clip;
 
@@ -67,15 +63,17 @@ public class GraphicPane extends GLJPanel implements GLEventListener, KeyListene
     private float[][] points = new float[50][3];
 
 
-    private float time = 0, ttime = 0, otime = 0, dt = 0, low = 0, med = 0, high = 0, mval = 0;
+    private float time = 0, tTime = 0, oTime = 0, dt = 0;
     private float bgFuzz = 0, fgFuzz = 0, sqRefract = 0, wind = 0, windDir = 0, windMove = 0, age = 0, fuzzGravity = 1;
     private float fuzzSize = 1;
     private int timeStamp = 0;
 
-    private float len = 50, lenf = 0.86f, offset = 0.0f, spread = 0.9f, widthf = 0.66f;
+    private float[] p1C = new float[3], p2C = new float[3], p3C = new float[3], p4C = new float[3];
+
+    private float lenf = 0.86f, spread = 0.9f, widthf = 0.66f;
     private float mouseX = 0, mouseY = 0;
 
-    private Color leafColor = Color.green, trunkColor = Color.black;
+    private Color leafColor = Color.green, trunkColor = Color.black, particleColor = Color.white;
 
 
     public GraphicPane(Clip c, Keyframes kf) {
@@ -85,6 +83,7 @@ public class GraphicPane extends GLJPanel implements GLEventListener, KeyListene
         addGLEventListener(this);
         addKeyListener(this);
         addMouseMotionListener(this);
+        addMouseListener(this);
 
         for (int i = 0; i < points.length; i++) {
             points[i][0] = (float) Math.random() * 1024;
@@ -108,18 +107,16 @@ public class GraphicPane extends GLJPanel implements GLEventListener, KeyListene
 
         new Thread() {
             public void run() {
-                try {
-                    while (true) {
-                        try {
-                            Thread.sleep(17);
-                            timeStamp = (int) (LineOut.SAMPLING_RATE * ((System.currentTimeMillis() - clip.tStart) / 1000f));
-                            setParameters(timeStamp);
-                            repaint();
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
+                while (true) {
+                    try {
+                        Thread.sleep(17);
+                        timeStamp = (int) (LineOut.SAMPLING_RATE * ((System.currentTimeMillis() - clip.tStart) / 1000f));
+                        setParameters(timeStamp);
+                        repaint();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                        break;
                     }
-                } catch (Exception e) {
                 }
             }
         }.start();
@@ -132,9 +129,9 @@ public class GraphicPane extends GLJPanel implements GLEventListener, KeyListene
 
     private void setParameters(int timeStamp) {
         float[] params = keyFrames.getFrame(timeStamp);
-        otime = time;
         time = timeStamp * 0.0001f;
-        dt = time - otime;
+        dt = time - oTime;
+        oTime = time;
 
         age = params[0];
         float windInt = params[1];
@@ -143,20 +140,25 @@ public class GraphicPane extends GLJPanel implements GLEventListener, KeyListene
         fuzzSize = params[4];
         bgFuzz = params[5];
         fgFuzz = params[6];
-        trunkColor = new Color((int)params[7], (int)params[8],(int)params[9],(int)params[10]);
-        leafColor = new Color((int)params[11], (int)params[12],(int)params[13],(int)params[14]);
+        trunkColor = new Color((int) params[7], (int) params[8], (int) params[9], (int) params[10]);
+        leafColor = new Color((int) params[11], (int) params[12], (int) params[13], (int) params[14]);
+        particleColor = new Color((int) params[15], (int) params[16], (int) params[17], (int) params[18]);
+        p1C[0] = params[19]/255f; p1C[1] = params[20]/255f; p1C[2] = params[21]/255f;
+        p2C[0] = params[22]/255f; p2C[1] = params[23]/255f; p2C[2] = params[24]/255f;
+        p3C[0] = params[25]/255f; p3C[1] = params[26]/255f; p3C[2] = params[27]/255f;
+        p4C[0] = params[28]/255f; p4C[1] = params[29]/255f; p4C[2] = params[30]/255f;
 
 
-        windMove = (windMove * 989 + 10*mouseX + windDir) / 1000;
+        windMove = (windMove * 989 + 10 * mouseX + windDir) / 1000;
         wind = windMove * windInt;
-        if(wind > 1)
+        if (wind > 1)
             wind = 1;
-        if(wind < -1)
+        if (wind < -1)
             wind = -1;
-        if(Math.random() < 0.01)
-            windDir = (float)Math.random()*2-1;
-        ttime = time + (float) Math.random() * 0.1f;
-       // trunkColor = new Color((int) (127 * Math.sin(time)) + 127, (int) (127 * Math.sin(time + 7)) + 127, (int) (127 * Math.sin(time + 5)) + 127, 255);
+        if (Math.random() < 0.01)
+            windDir = (float) Math.random() * 2 - 1;
+        tTime = time + (float) Math.random() * 0.1f;
+        // trunkColor = new Color((int) (127 * Math.sin(time)) + 127, (int) (127 * Math.sin(time + 7)) + 127, (int) (127 * Math.sin(time + 5)) + 127, 255);
     }
 
 
@@ -254,7 +256,14 @@ public class GraphicPane extends GLJPanel implements GLEventListener, KeyListene
         gl.glUniform1f(location, wind);
         location = gl.glGetUniformLocation(shaderProgram, "sqRefract");
         gl.glUniform1f(location, sqRefract);
-
+        location = gl.glGetUniformLocation(shaderProgram, "p1C");
+        gl.glUniform3f(location, p1C[0], p1C[1], p1C[2]);
+        location = gl.glGetUniformLocation(shaderProgram, "p2C");
+        gl.glUniform3f(location, p2C[0], p2C[1], p2C[2]);
+        location = gl.glGetUniformLocation(shaderProgram, "p3C");
+        gl.glUniform3f(location, p3C[0], p3C[1], p3C[2]);
+        location = gl.glGetUniformLocation(shaderProgram, "p4C");
+        gl.glUniform3f(location, p4C[0], p4C[1], p4C[2]);
 
         gl.glActiveTexture(GL3.GL_TEXTURE0);
 
@@ -267,21 +276,21 @@ public class GraphicPane extends GLJPanel implements GLEventListener, KeyListene
         rand.setSeed(treeSeed);
 
         // flakes
-        g.setColor(Color.white);
+        g.setColor(particleColor);
         for (float[] point : points) {
             point[1] -= fuzzGravity * 5 * dt * (Math.random() * 0.05 + (point[2] - 1) * 3);
             if (point[1] < 0)
                 point[1] = 1024;
-            point[0] += 5 * dt * (wind * 10 * (point[2] - 1) + Math.random() * 0.02);
+            point[0] += 10 * dt * (wind * 10 * (point[2] - 1) + Math.random() * 0.02);
             if (point[0] < 0)
                 point[0] = 1024;
             if (point[0] > 1024)
                 point[0] = 0;
-            g.fillOval((int) point[0], (int) point[1], (int) (point[2]*fuzzSize), (int) (int) (point[2]*fuzzSize));
+            g.fillOval((int) point[0], (int) point[1], (int) (point[2] * fuzzSize), (int) (point[2] * fuzzSize));
         }
 
         // draw the tree with heavy magic number fuckery
-        drawTree(g, 0, age, 2, new Point(512, 0), 25 + age * 6.5f, 1.57f, age * 2.3f, wind * -0.2f + (float) Math.sin(ttime * 8.1) * 0.003f * Math.abs(wind), 1.0f + age / 24.0f - Math.abs(wind) * 0.7f + (float) Math.sin(ttime * 8) * 0.03f * Math.abs(wind), trunkColor, rand, age * 2.3f - 4, leafColor);
+        drawTree(g, 0, age, 2, new Point(512, 0), 25 + age * 6.5f, 1.57f, age * 2.3f, wind * -0.2f + (float) Math.sin(tTime * 8.1) * 0.003f * Math.abs(wind), 1.0f + age / 24.0f - Math.abs(wind) * 0.7f + (float) Math.sin(tTime * 8) * 0.03f * Math.abs(wind), trunkColor, rand, age * 2.3f - 4, leafColor);
 
         tex.updateImage(gl, AWTTextureIO.newTextureData(gl.getGLProfile(), img, true));
 
@@ -298,11 +307,11 @@ public class GraphicPane extends GLJPanel implements GLEventListener, KeyListene
     public void drawTree(Graphics2D gg, int depth, float maxDepth, int branches, Point start, float len, double angle, float width, float offset, float spread, Color c, Random rand, float leafSize, Color leafColor) {
         gg.setColor(c);
         gg.setStroke(new BasicStroke(width));
-        float nlen = len;
+        float nLen = len;
 
-        float lsize = leafSize / 2 + rand.nextFloat() * leafSize / 2;
+        float lSize = leafSize / 2 + rand.nextFloat() * leafSize / 2;
         if (depth - 1 == Math.floor(maxDepth))
-            nlen *= maxDepth - Math.floor(maxDepth);
+            nLen *= maxDepth - Math.floor(maxDepth);
 
         int red = clamp(leafColor.getRed() + rand.nextInt(30) - 15, 0, 255);
 
@@ -312,11 +321,11 @@ public class GraphicPane extends GLJPanel implements GLEventListener, KeyListene
 
         leafColor = new Color(red, green, blue, leafColor.getAlpha());
 
-        gg.drawLine(start.x, start.y, (int) (start.x + nlen * Math.cos(angle)), (int) (start.y + nlen * Math.sin(angle)));
+        gg.drawLine(start.x, start.y, (int) (start.x + nLen * Math.cos(angle)), (int) (start.y + nLen * Math.sin(angle)));
 
         if (depth >= maxDepth) {
             gg.setColor(leafColor);
-            gg.fillOval((int) (start.x + nlen * (float) Math.cos(angle) - lsize / 2), (int) (start.y + nlen * (float) Math.sin(angle) - lsize / 2), (int) lsize, (int) lsize);
+            gg.fillOval((int) (start.x + nLen * (float) Math.cos(angle) - lSize / 2), (int) (start.y + nLen * (float) Math.sin(angle) - lSize / 2), (int) lSize, (int) lSize);
             return;
         }
         for (int i = 0; i < branches; i++) {
@@ -326,7 +335,7 @@ public class GraphicPane extends GLJPanel implements GLEventListener, KeyListene
                 drawTree(gg, depth + 1, maxDepth, branches, new Point((int) (start.x + len * Math.cos(angle + i * 0.05 - 0.025)), (int) (start.y + len * Math.sin(angle + i * 0.05 - 0.025))), len * lenf, offset + angle - spread / 4 + i * (spread / branches) + spread * 0.45 * (rand.nextFloat() - 0.5), width * widthf, offset, spread, c, nRand, leafSize, leafColor);
             else if (maxDepth - depth < 4) {
                 gg.setColor(leafColor);
-                gg.fillOval((int) (start.x + nlen * (float) Math.cos(angle) - lsize / 2), (int) (start.y + nlen * (float) Math.sin(angle) - lsize / 2), (int) lsize, (int) lsize);
+                gg.fillOval((int) (start.x + nLen * (float) Math.cos(angle) - lSize / 2), (int) (start.y + nLen * (float) Math.sin(angle) - lSize / 2), (int) lSize, (int) lSize);
             }
         }
     }
@@ -404,17 +413,6 @@ public class GraphicPane extends GLJPanel implements GLEventListener, KeyListene
         }
     }
 
-    @Override
-    public void keyReleased(KeyEvent e) {
-    }
-
-    @Override
-    public void keyTyped(KeyEvent e) {
-    }
-
-    @Override
-    public void reshape(GLAutoDrawable glAutoDrawable, int i, int i2, int i3, int i4) {
-    }
 
 
     @Override
@@ -424,6 +422,38 @@ public class GraphicPane extends GLJPanel implements GLEventListener, KeyListene
     }
 
     @Override
+    public void mouseReleased(MouseEvent e) {
+        mouseX = 0;
+        mouseY = 0;
+    }
+
+    @Override
+    public void mouseExited(MouseEvent e) {
+        mouseX = 0;
+        mouseY = 0;
+    }
+
+
+    @Override
     public void mouseMoved(MouseEvent e) {
     }
+    @Override
+    public void mouseClicked(MouseEvent e) {
+    }
+    @Override
+    public void mousePressed(MouseEvent e) {
+    }
+    @Override
+    public void mouseEntered(MouseEvent e) {
+    }
+    @Override
+    public void keyReleased(KeyEvent e) {
+    }
+    @Override
+    public void keyTyped(KeyEvent e) {
+    }
+    @Override
+    public void reshape(GLAutoDrawable glAutoDrawable, int i, int i2, int i3, int i4) {
+    }
+
 }

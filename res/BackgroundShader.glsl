@@ -4,9 +4,10 @@ out vec4 fColor;
 uniform float time;
 uniform float bgFuzz;
 uniform float fgFuzz;
-uniform float high;
 uniform float wind;
 uniform float sqRefract;
+
+uniform vec3 p1C, p2C, p3C, p4C;
 
 
 uniform sampler2D tex;
@@ -31,8 +32,6 @@ void main(void) {
     ffPos.y *= 8./12;
 
     vec4 nPos = vec4(0);
-
-
 
     float treeFuzz = 0.0025;
 
@@ -63,16 +62,16 @@ void main(void) {
 
     //background color points
     vec4 bgP1 = vec4(1.1, 1.1, 0, 0);
-    vec4 bgC1 = vec4(0.4, 0.5, 0.9, 0);
+    vec4 bgC1 = vec4(p1C, 0);
 
     vec4 bgP2 = vec4(-1.1, 1.1, 0, 0);
-    vec4 bgC2 = vec4(0.5, 0.4, 0.9, 0);
+    vec4 bgC2 = vec4(p2C, 0);
 
     vec4 bgP3 = vec4(0, -1.7, 0, 0);
-    vec4 bgC3 = vec4(0.2, 0.2, 0.5, 0);
+    vec4 bgC3 = vec4(p3C, 0);
 
     vec4 bgP4 = vec4(0, -0.2, 0, 0);
-    vec4 bgC4 = vec4(0.7, 0.7, 0.2, 0);
+    vec4 bgC4 = vec4(p4C, 0);
 
 
     //background color blending
