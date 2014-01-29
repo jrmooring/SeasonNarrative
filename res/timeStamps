@@ -1,2 +1,4 @@
-# timestamp, tree age, wind intensity, square refraction, fuzz gravity, fuzz size
-         12,        9,            1.1,              0.00,          0.1,       1.3
+# timestamp, tree age, wind intensity, square refraction, particle gravity, particle size, bgFuzzFactor, fgFuzzFactor
+#         trunkColor,            leafColor,              p1Color,              p2Color,              p3Color,             p4Color
+          0,    9.00,            1.10,              0.00,              1.00,         1.3,          1.00,          1.00
+(140, 124, 080, 255), (010, 255, 008, 255), (010, 124, 008, 255), (010, 124, 008, 255), (010, 124, 008, 255), (010, 124, 008, 255)

@@ -2,8 +2,8 @@
 in vec4 fPos;
 out vec4 fColor;
 uniform float time;
-uniform float low;
-uniform float med;
+uniform float bgFuzz;
+uniform float fgFuzz;
 uniform float high;
 uniform float wind;
 uniform float sqRefract;
@@ -46,7 +46,7 @@ void main(void) {
 
 
     //blur
-    nPos += fuzz(ffPos,treeFuzz);
+    nPos += fuzz(ffPos,treeFuzz*fgFuzz);
 
     vec4 tcolor = texture2D(tex,nPos.xy*0.5 + vec2(0.5,0.35)).rgba;
 
@@ -58,7 +58,7 @@ void main(void) {
     nPos = rotate(nPos,-wind*1*pow(2,-256*pow(1.1+abs(wind)*0.05-distance(nPos,spinCenter),2)));
 
     //post wind spin fuzz
-    nPos = fuzz(nPos, 0.1);
+    nPos = fuzz(nPos, 0.1*bgFuzz);
 
 
     //background color points

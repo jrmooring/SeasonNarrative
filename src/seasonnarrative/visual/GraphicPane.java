@@ -68,7 +68,7 @@ public class GraphicPane extends GLJPanel implements GLEventListener, KeyListene
 
 
     private float time = 0, ttime = 0, otime = 0, dt = 0, low = 0, med = 0, high = 0, mval = 0;
-    private float ilow = 0, imed = 0, sqRefract = 0, wind = 0, windDir = 0, windMove = 0, age = 0, fuzzGravity = 1;
+    private float bgFuzz = 0, fgFuzz = 0, sqRefract = 0, wind = 0, windDir = 0, windMove = 0, age = 0, fuzzGravity = 1;
     private float fuzzSize = 1;
     private int timeStamp = 0;
 
@@ -141,6 +141,10 @@ public class GraphicPane extends GLJPanel implements GLEventListener, KeyListene
         sqRefract = params[2];
         fuzzGravity = params[3];
         fuzzSize = params[4];
+        bgFuzz = params[5];
+        fgFuzz = params[6];
+        trunkColor = new Color((int)params[7], (int)params[8],(int)params[9],(int)params[10]);
+        leafColor = new Color((int)params[11], (int)params[12],(int)params[13],(int)params[14]);
 
 
         windMove = (windMove * 989 + 10*mouseX + windDir) / 1000;
@@ -152,7 +156,7 @@ public class GraphicPane extends GLJPanel implements GLEventListener, KeyListene
         if(Math.random() < 0.01)
             windDir = (float)Math.random()*2-1;
         ttime = time + (float) Math.random() * 0.1f;
-        trunkColor = new Color((int) (127 * Math.sin(time)) + 127, (int) (127 * Math.sin(time + 7)) + 127, (int) (127 * Math.sin(time + 5)) + 127, 255);
+       // trunkColor = new Color((int) (127 * Math.sin(time)) + 127, (int) (127 * Math.sin(time + 7)) + 127, (int) (127 * Math.sin(time + 5)) + 127, 255);
     }
 
 
@@ -242,10 +246,10 @@ public class GraphicPane extends GLJPanel implements GLEventListener, KeyListene
         location = gl.glGetUniformLocation(shaderProgram, "time");
         gl.glUniform1f(location, time);
 
-        location = gl.glGetUniformLocation(shaderProgram, "low");
-        gl.glUniform1f(location, ilow);
-        location = gl.glGetUniformLocation(shaderProgram, "med");
-        gl.glUniform1f(location, imed);
+        location = gl.glGetUniformLocation(shaderProgram, "bgFuzz");
+        gl.glUniform1f(location, bgFuzz);
+        location = gl.glGetUniformLocation(shaderProgram, "fgFuzz");
+        gl.glUniform1f(location, fgFuzz);
         location = gl.glGetUniformLocation(shaderProgram, "wind");
         gl.glUniform1f(location, wind);
         location = gl.glGetUniformLocation(shaderProgram, "sqRefract");
