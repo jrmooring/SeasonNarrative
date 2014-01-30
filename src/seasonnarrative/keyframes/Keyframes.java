@@ -35,6 +35,8 @@ public class Keyframes {
         }
     }
 
+    public static int keyFrame = 0;
+
 
     public ArrayList<KeyFrame> KeyFramesList;
 
@@ -63,20 +65,28 @@ public class Keyframes {
     public float[] getFrame(long timeStamp) {
         KeyFrame k1 = null;
         KeyFrame k2 = null;
-        if(KeyFramesList.get(0).timeStamp > timeStamp)
+        if(KeyFramesList.get(0).timeStamp > timeStamp){
+            keyFrame = 0;
             return interpolateLinear(timeStamp, KeyFramesList.get(0), null);
-        if (KeyFramesList.size() == 1)
+        }
+        if (KeyFramesList.size() == 1){
+            keyFrame = 0;
             k1 = KeyFramesList.get(0);
+        }
         else {
             for (int i = 0; i < KeyFramesList.size(); i++) {
-                if (KeyFramesList.get(i).timeStamp == timeStamp)
+                if (KeyFramesList.get(i).timeStamp == timeStamp){
+                    keyFrame = i;
                     return interpolateLinear(timeStamp, KeyFramesList.get(i), null);
+                }
                 if (KeyFramesList.get(i).timeStamp < timeStamp
                         && i + 1 == KeyFramesList.size()) {
+                    keyFrame = i;
                     return interpolateLinear(timeStamp, KeyFramesList.get(i), null);
                 }
                 if (KeyFramesList.get(i).timeStamp < timeStamp
                         && KeyFramesList.get(i + 1).timeStamp > timeStamp) {
+                    keyFrame = i;
                     k1 = KeyFramesList.get(i);
                     k2 = KeyFramesList.get(i + 1);
                     break;
@@ -97,16 +107,13 @@ public class Keyframes {
         float ratio = ((float)(timeStamp - k1.timeStamp))/(k2.timeStamp - k1.timeStamp);
         for (int i = 0; i < interpolatedParameters.length; i++){
             interpolatedParameters[i] = (1-ratio)*k1.parameters[i] + ratio*k2.parameters[i];
-
-<<<<<<< HEAD
-=======
         }
->>>>>>> 4f66e7f51082ea5f28ef1c0ec7a571b7265a10b7
         return interpolatedParameters;
     }
 
 
     public void clear() {
+        KeyFramesList.clear();
     }
 
     public void load(File f) {
@@ -115,7 +122,7 @@ public class Keyframes {
             Scanner sc = new Scanner(f);
             while (sc.hasNextLine()) {
                 String s = sc.nextLine();
-                if (s.trim().startsWith("#"))
+                if (s.trim().startsWith("#")||s.trim().equals(""))
                     continue;
                 s += "," + sc.nextLine();
                 String[] vals = s.replace("(", "").replace(")", "").split(",");

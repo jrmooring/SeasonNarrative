@@ -68,6 +68,7 @@ public class GraphicPane extends GLJPanel implements GLEventListener, KeyListene
     private float fuzzSize = 1;
     private int timeStamp = 0;
 
+
     private float[] p1C = new float[3], p2C = new float[3], p3C = new float[3], p4C = new float[3];
 
     private float lenf = 0.86f, spread = 0.9f, widthf = 0.66f;
