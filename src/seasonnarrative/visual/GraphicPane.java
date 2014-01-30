@@ -268,6 +268,7 @@ public class GraphicPane extends GLJPanel implements GLEventListener, KeyListene
         gl.glActiveTexture(GL3.GL_TEXTURE0);
 
 
+        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC));
         g.setColor(new Color(126, 0, 0, 0));
         g.fillRect(0, 0, 1024, 1024);
 
@@ -275,6 +276,7 @@ public class GraphicPane extends GLJPanel implements GLEventListener, KeyListene
         Random rand = new Random();
         rand.setSeed(treeSeed);
 
+        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER));
         // flakes
         g.setColor(particleColor);
         for (float[] point : points) {
