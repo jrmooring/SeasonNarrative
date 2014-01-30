@@ -110,7 +110,8 @@ public class GraphicPane extends GLJPanel implements GLEventListener, KeyListene
                 while (true) {
                     try {
                         Thread.sleep(17);
-                        timeStamp = (int) (LineOut.SAMPLING_RATE * ((System.currentTimeMillis() - clip.tStart) / 1000f));
+                        timeStamp = (int) (LineOut.SAMPLING_RATE * ((System.currentTimeMillis() - clip.startTime()) / 1000f));
+                    //    System.out.println(clip.startTime());
                         setParameters(timeStamp);
                         repaint();
                     } catch (InterruptedException e) {
@@ -131,6 +132,8 @@ public class GraphicPane extends GLJPanel implements GLEventListener, KeyListene
         float[] params = keyFrames.getFrame(timeStamp);
         time = timeStamp * 0.0001f;
         dt = time - oTime;
+        if(dt > 2 || dt < 0)
+            dt = 0;
         oTime = time;
 
         age = params[0];
@@ -361,7 +364,8 @@ public class GraphicPane extends GLJPanel implements GLEventListener, KeyListene
         g.drawString(String.format("FPS: %.1f", 1000.0 / gfTime), 10, 40);
         g.drawString(String.format("wind: %.4f", wind), 10, 60);
         g.drawString(String.format("tree seed: %d", treeSeed), 10, 80);
-        g.drawString(String.format("timestamp: %d", timeStamp), 10, 100);
+        g.drawString(String.format("time stamp: %d", timeStamp), 10, 100);
+        g.drawString(String.format("key frame: %d", Keyframes.keyFrame), 10, 120);
     }
 
 
@@ -403,16 +407,10 @@ public class GraphicPane extends GLJPanel implements GLEventListener, KeyListene
             ++treeSeed;
         if (e.getKeyCode() == KeyEvent.VK_DOWN)
             --treeSeed;
-        if (e.getKeyCode() == KeyEvent.VK_LEFT) {
-            clip.tStart += 10 * LineOut.SAMPLING_RATE;
-            clip.rr(10);
-        }
-        if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
-            clip.tStart -= 10 * LineOut.SAMPLING_RATE;
-            if (clip.tStart < 0)
-                clip.tStart = 0;
-            clip.ff(10);
-        }
+        if (e.getKeyCode() == KeyEvent.VK_LEFT)
+            clip.rr(20);
+        if (e.getKeyCode() == KeyEvent.VK_RIGHT)
+            clip.ff(20);
     }
 
 
