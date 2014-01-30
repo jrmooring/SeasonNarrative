@@ -63,7 +63,7 @@ public class Keyframes {
 
         float[] interpolatedParameters = null; //TODO: interpolate linearly
 
-        return interpolatedParameters; 
+        return interpolatedParameters;
     }
 
     public void clear() {
