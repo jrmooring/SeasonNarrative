@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Scanner;
+import java.util.ArrayList;
 
 /**
  * Created by John Mooring (jmooring)
@@ -24,48 +25,78 @@ import java.util.Scanner;
  */
 public class Keyframes {
 
-    private class KeyFrame {
-        public long timeStamp;
-        public float[] parameters;
+	private class KeyFrame {
+		public long timeStamp;
+		public float[] parameters;
 
-        public KeyFrame(long timeStamp, float[] parameters) {
-            this.timeStamp = timeStamp;
-            this.parameters = parameters;
-        }
-    }
+		public KeyFrame(long timeStamp, float[] parameters) {
+			this.timeStamp = timeStamp;
+			this.parameters = parameters;
+		}
+	}
+	
+	KeyFrame kk = null;
 
-    KeyFrame kk = null;
+	public ArrayList<KeyFrame> KeyFramesList;
 
-    //TODO: choose appropriate datastructure
+	public Keyframes(int parameters) {
+		KeyFramesList = new ArrayList<KeyFrame>();
+	}
 
-    public Keyframes() {
-        //TODO: initialize datastructure
-    }
+	public void addKeyframe(long timeStamp, float[] parameters) {
+		KeyFrame k = new KeyFrame(timeStamp, parameters);
+		kk = k;
+		if (KeyFramesList.size() == 0) {
+			KeyFramesList.add(k);
+		} else {
+			for (int i = 0; i < KeyFramesList.size(); i++) {
+				if (i == KeyFramesList.size() - 1) {
+					KeyFramesList.add(k);
+					break;
+				} else if (KeyFramesList.get(i).timeStamp < timeStamp
+						&& KeyFramesList.get(i + 1).timeStamp > timeStamp) {
+					KeyFramesList.add(i + 1, k);
+					break;
+				}
+			}
+		}
+	}
 
-    public void addKeyframe(long timeStamp, float[] parameters) {
-        KeyFrame k = new KeyFrame(timeStamp, parameters);
-        kk = k;
-        //TODO: add k to datastructure
-    }
+	public float[] getFrame(long timeStamp) {
+		KeyFrame k1 = null;
+		KeyFrame k2 = null;
+		for (int i = 0; i < KeyFramesList.size(); i++) {
+			if (KeyFramesList.get(i).timeStamp > timeStamp && i == 0) {
+				k2 = KeyFramesList.get(i);
+			} else if (KeyFramesList.size() == 1) {
+				k1 = KeyFramesList.get(i);
+			} else if (KeyFramesList.get(i).timeStamp < timeStamp
+					&& KeyFramesList.get(i + 1).timeStamp > timeStamp) {
+				k1 = KeyFramesList.get(i);
+				k2 = KeyFramesList.get(i + 1);
+				break;
+			}
+		}
 
-    public float[] getFrame(long timeStamp) {
-        KeyFrame k1 = this.kk; //TODO: retrieve k1 from datastructure
-        KeyFrame k2 = null; //TODO: retrieve k2 from datastructure
+		return interpolateLinear(timeStamp, k1, k2);
+	}
 
-        return interpolateLinear(timeStamp, k1, k2);
-    }
+	private float[] interpolateLinear(long timeStamp, KeyFrame k1, KeyFrame k2) {
+		if (k2 == null)
+			return k1.parameters;
+		if (k1 == null)
+			return k2.parameters;
 
-    private float[] interpolateLinear(long timeStamp, KeyFrame k1, KeyFrame k2) {
-        if (k2 == null && k1 != null)
-            return k1.parameters;
-        if (k1 == null && k2 != null)
-            return k2.parameters;
+		float[] interpolatedParameters = new float[2]; 
+		interpolatedParameters[0] = (int) (((timeStamp - k1.timeStamp)
+				* (k2.parameters[0] - k1.parameters[0]) / (k2.timeStamp - k1.timeStamp) + k1.parameters[0]));
+		interpolatedParameters[1] = (int) (((timeStamp - k1.timeStamp)
+				* (k2.parameters[1] - k1.parameters[1]) /( k2.timeStamp - k1.timeStamp) + k1.parameters[1]));
 
-        float[] interpolatedParameters = null; //TODO: interpolate linearly
-
-        return interpolatedParameters; 
-    }
-
+		return interpolatedParameters;
+	}
+	
+	
     public void clear() {
     }
 
