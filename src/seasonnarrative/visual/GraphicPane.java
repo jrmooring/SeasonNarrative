@@ -12,7 +12,10 @@ import javax.media.opengl.awt.GLJPanel;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferByte;
+import java.awt.image.DataBufferInt;
 import java.io.File;
+import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.Random;
@@ -58,7 +61,7 @@ public class GraphicPane extends GLJPanel implements GLEventListener, KeyListene
 
     private Texture tex;
     private Graphics2D g;
-    private final BufferedImage img = toCompatibleImage(new BufferedImage(1024, 1024, BufferedImage.TYPE_INT_ARGB));
+    private final BufferedImage img = new BufferedImage(1024, 1024, BufferedImage.TYPE_INT_ARGB);
 
     private float[][] points = new float[50][3];
 
@@ -298,7 +301,10 @@ public class GraphicPane extends GLJPanel implements GLEventListener, KeyListene
         // draw the tree with heavy magic number fuckery
         drawTree(g, 0, age, 2, new Point(512, 0), 25 + age * 6.5f, 1.57f, age * 2.3f, wind * -0.2f + (float) Math.sin(tTime * 8.1) * 0.003f * Math.abs(wind), 1.0f + age / 24.0f - Math.abs(wind) * 0.7f + (float) Math.sin(tTime * 8) * 0.03f * Math.abs(wind), trunkColor, rand, age * 2.3f - 4, leafColor);
 
-        tex.updateImage(gl, AWTTextureIO.newTextureData(gl.getGLProfile(), img, true));
+        tex.bind(gl);
+
+        //tex.updateImage(gl, AWTTextureIO.newTextureData(gl.getGLProfile(), img, true));
+        gl.glTexImage2D(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA, img.getWidth(), img.getHeight(), 0, GL.GL_BGRA, GL.GL_UNSIGNED_BYTE, IntBuffer.wrap(((DataBufferInt)img.getRaster().getDataBuffer()).getData()));
 
         tex.bind(gl);
 
